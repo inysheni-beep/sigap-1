@@ -3,69 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TERAS - Dashboard Stakeholder IoT Salinitas</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Dashboard SIGAP - Eretan Wetan</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS & JS (Untuk Peta Satelit Ril) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Leaflet CSS & JS for Satellite Maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
-</head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
-
-    <!-- TOP NAVIGATION BAR -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-10 h-10 bg-emerald-600 rounded-xl text-white shadow-md">
-                        <i data-lucide="sprout" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-slate-900 text-lg">TERAS</span>
-                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full" id="roleBadge">Penyuluh Pertanian</span>
-                        </div>
-                        <p class="text-[10px] text-slate-500 font-medium">Eretan Wetan, Indramayu • Real-Time Salinity IoT</p>
-                    </div>
-                </div>
-
-                <!-- Mode Switcher & Profile -->
-                <div class="flex items-center gap-3">
-                    <div class="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
-                        <i data-lucide="users" class="w-4 h-4 text-slate-500"></i>
-                        <span class="text-xs text-slate-500 font-medium">Mode Tampilan:</span>
-                        <select id="roleSwitcher" onchange="switchRoleView(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
-                            <option value="penyuluh" selected>2. Penyuluh Pertanian</option>
-                            <option value="dinas">1. Dinas Pertanian</option>
-                            <option value="autp">3. Petugas AUTP</option>
-                            <option value="peneliti">4. Peneliti / Akademisi</option>
-                        </select>
-                    </div>
-
-                    <a href="index.html" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Keluar / Logout">
-                        <i data-lucide="log-out" class="w-5 h-5"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- KONTEN UTAMA AKAN DISESUAIKAN SECARA DINAMIS OLEH JAVASCRIPT -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        <!-- Tampilan Dinas, Penyuluh, AUTP, Peneliti dimuat di sini -->
-    </main>
+    <!-- html2pdf.js (Untuk Export PDF Dinas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
-        lucide.createIcons();
-        // Logika routing dan pendukung peta/grafik lengkap ada pada file terlampir
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0B1E1C',
+                            card: '#132A27',
+                            accent: '#10B981',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex font-sans">
+
+    <!-- SIDEBAR NAVIGATION (Dinamis sesuai Role) -->
+    <aside class="w-64 bg-brand-dark border-r border-slate-800 flex flex-col justify-between hidden md:flex">
+        <div>
+            <!-- Logo -->
+            <div class="p-6 border-b border-slate-800/80 flex items-center space-x-3">
+                <div class="w-10 h-10 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-leaf text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold tracking-wider text-white">SIGAP</h1>
+                    <p class="text-[10px] text-emerald-400 font-semibold uppercase">Eretan Wetan, Indramayu</p>
+                </div>
+            </div>
+
+            <!-- Role Badge -->
+            <div class="px-6 py-4 border-b border-slate-800/50">
+                <span class="text-[11px] uppercase tracking-wider text-slate-400 block mb-1">Masuk Sebagai:</span>
+                <span id="roleBadge" class="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-1 rounded-md font-bold uppercase">
+                    Memuat...
+                </span>
+            </div>
+
+            <!-- Dynamic Menu Items -->
+            <nav id="sidebarMenu" class="p-4 space-y-1.5 text-sm"></nav>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="p-4 border-t border-slate-800/80">
+            <button onclick="handleLogout()" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span class="font-semibold">Keluar</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        <!-- Top Navbar -->
+        <header class="bg-brand-dark/50 backdrop-blur-md border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-40">
+            <div>
+                <h2 id="pageTitle" class="text-xl font-bold text-white">Ringkasan Monitoring</h2>
+                <p class="text-xs text-slate-400">Sistem Peringatan Dini Salinitas Real-time</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <p id="userNameDisplay" class="text-sm font-semibold text-white">Pengguna</p>
+                    <p class="text-xs text-emerald-400">Status IoT: 3 Sensor Online</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <div id="contentArea" class="p-8 space-y-6">
+            <!-- Isi halaman akan dirender otomatis oleh JavaScript di bawah -->
+        </div>
+    </main>
+
+    <!-- LOGIKA APP (RBAC, Render Konten, Peta Satelit, & Grafik) -->
+    <script>
+        // 1. Cek Role dari LocalStorage
+        const userRole = localStorage.getItem('userRole') || 'penyuluh';
+        const userName = localStorage.getItem('userName') || 'Pengguna Demo';
+        
+        document.getElementById('roleBadge').innerText = userRole;
+        document.getElementById('userNameDisplay').innerText = userName;
+
+        // 2. Daftar Menu per Role
+        const menusByRole = {
+            dinas: [
+                { name: 'Peta Satelit Eretan', icon: 'fa-map-location-dot', id: 'map' },
+                { name: 'Monitoring Sensor', icon: 'fa-tower-broadcast', id: 'sensors' },
+                { name: 'Grafik Bulanan', icon: 'fa-chart-line', id: 'monthly' },
+                { name: 'Prediksi Luas Terdampak', icon: 'fa-triangle-exclamation', id: 'prediction' },
+                { name: 'Laporan PDF Otomatis', icon: 'fa-file-pdf', id: 'pdf-report' }
+            ],
+            penyuluh: [
+                { name: 'Beranda & Notif SMS', icon: 'fa-house', id: 'home' },
+                { name: 'Peta Sensor Satelit', icon: 'fa-map', id: 'map' },
+                { name: 'Detail Sensor (7/30/90)', icon: 'fa-chart-area', id: 'detail-sensor' },
+                { name: 'Analisis Kondisi', icon: 'fa-microscope', id: 'analysis' },
+                { name: 'Laporan & Catatan', icon: 'fa-clipboard-list', id: 'notes' }
+            ],
+            autp: [
+                { name: 'Validasi Klaim AUTP', icon: 'fa-file-shield', id: 'autp-claim' },
+                { name: 'Bukti Alarm & SMS', icon: 'fa-bell', id: 'alarms' },
+                { name: 'Riwayat Sensor', icon: 'fa-clock-rotate-left', id: 'history' },
+                { name: 'Laporan Penyuluh', icon: 'fa-folder-open', id: 'reports' }
+            ],
+            akademisi: [
+                { name: 'Beranda Ringkasan', icon: 'fa-gauge-high', id: 'home' },
+                { name: 'Grafik Komparasi', icon: 'fa-chart-simple', id: 'charts' },
+                { name: 'Analisis Tren', icon: 'fa-magnifying-glass-chart', id: 'trend' },
+                { name: 'Status Kualitas Data', icon: 'fa-database', id: 'data-quality' },
+                { name: 'Laporan Penyuluh', icon: 'fa-book-open', id: 'reports' }
+            ]
+        };
+
+        // 3. Render Sidebar Menu
+        const sidebar = document.getElementById('sidebarMenu');
+        const activeMenus = menusByRole[userRole] || menusByRole['penyuluh'];
+
+        activeMenus.forEach((item, index) => {
+            const btn = document.createElement('button');
+            btn.className = `w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+                index === 0 ? 'bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20' : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+            }`;
+            btn.innerHTML = `<i class="fa-solid ${item.icon} w-5"></i><span>${item.name}</span>`;
+            btn.onclick = () => loadContent(item.id, item.name);
+            sidebar.appendChild(btn);
+        });
+
+        // 4. Router Konten (Berdasarkan Klik Menu / Role)
+        function loadContent(menuId, menuName) {
+            document.getElementById('pageTitle').innerText = menuName;
+            const content = document.getElementById('contentArea');
+
+            // --- KONTEN PETA SATELIT (Dinas & Penyuluh) ---
+            if (menuId === 'map') {
+                content.innerHTML = `
+                    <div class="bg-brand-card border border-slate-800 rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-white">Peta Satelit Ril Sawah Pesisir Eretan Wetan</h3>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full">3 Sensor Aktif</span>
+                        </div>
+                        <div id="satelliteMap" class="w-full h-[450px] rounded-xl border border-slate-700"></div>
+                    </div>
+                `;
+                initSatelliteMap();
+            }
+            // --- KONTEN PREDIKSI LUAS TERDAMPAK (Dinas) ---
+            else if (menuId === 'prediction') {
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-brand-card border border-slate-800 p-6 rounded-2xl">
+                            <p class="text-xs text-slate-400 uppercase">Total Luas Lahan Sawah</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-2">120 <span class="text-sm font-normal text-slate-400">Hektar</span></h3>
+                        </div>
+                        <div class="bg-rose-950/40 border border-rose-800/60 p-6 rounded-2xl">
+                            <p class="text-xs text-rose-300 uppercase font-semibold">Prediksi Terdampak Salinitas</p>
+                            <h3 class="text-3xl font-extrabold text-rose-400 mt-2">18.5 <span class="text-sm font-normal text-rose-300">Hektar</span></h3>
+                            <p class="text-xs text-rose-300/80 mt-1">Blok Utara Eretan Wetan (EC > 4.0 mS/cm)</p>
+                        </div>
+                        <div class="bg-brand-card border border-slate-800 p-6 rounded-2xl">
+                            <p class="text-xs text-slate-400 uppercase">Status Mitigasi</p>
+                            <h3 class="text-xl font-bold text-amber-400 mt-2">Perlu Pemantauan Normalisasi Air</h3>
+                        </div>
+                    </div>
+                `;
+            }
+            // --- KONTEN BERANDA PENYULUH (Ada Notif SMS) ---
+            else if (menuId === 'home') {
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-brand-card border border-slate-800 p-6 rounded-2xl">
+                            <p class="text-xs text-slate-400 uppercase">Rata-rata EC Tanah</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-2">2,8 <span class="text-sm text-slate-400">mS/cm</span></h3>
+                            <p class="text-xs text-emerald-400 mt-1"><i class="fa-solid fa-check"></i> Kondisi Normal / Aman</p>
+                        </div>
+                        <div class="bg-brand-card border border-slate-800 p-6 rounded-2xl">
+                            <p class="text-xs text-slate-400 uppercase">Kelembapan & Suhu</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-2">42% <span class="text-lg text-slate-400">| 29°C</span></h3>
+                            <p class="text-xs text-slate-400 mt-1">Suhu stabil dalam 7 hari terakhir</p>
+                        </div>
+                        <div class="bg-brand-card border border-slate-800 p-6 rounded-2xl">
+                            <p class="text-xs text-slate-400 uppercase">Status Sistem SMS Peringatan</p>
+                            <h3 class="text-xl font-bold text-emerald-400 mt-2">Siaga & Aktif</h3>
+                            <p class="text-xs text-slate-400 mt-1">Trigger SMS: Jika EC > 4.0 mS/cm</p>
+                        </div>
+                    </div>
+
+                    <!-- Notifikasi Terbaru SMS Petani -->
+                    <div class="bg-brand-card border border-slate-800 rounded-2xl p-6">
+                        <h4 class="font-bold text-white mb-4 flex items-center space-x-2">
+                            <i class="fa-solid fa-message text-emerald-400"></i>
+                            <span>Notifikasi SMS Otomatis Terbaru ke Petani</span>
+                        </h4>
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-3 p-4 bg-slate-900/80 border border-slate-800 rounded-xl">
+                                <span class="w-2 h-2 rounded-full bg-amber-400 mt-2"></span>
+                                <div>
+                                    <p class="text-sm font-semibold text-white">[SMS Terkirim] Peringatan Salinitas - Blok A Sawah Eretan</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">"Sensor 04 mendeteksi EC naik ke 4,1 mS/cm. Segera periksa saluran air masuk." -> Dikirim ke 14 Petani Blok A.</p>
+                                    <span class="text-[10px] text-slate-500 mt-1 block">Kemarin, 14:30 WIB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // --- KONTEN VALIDASI AUTP ---
+            else if (menuId === 'autp-claim') {
+                content.innerHTML = `
+                    <div class="bg-brand-card border border-slate-800 rounded-2xl p-6">
+                        <h3 class="font-bold text-white mb-4">Daftar Verifikasi & Validasi Klaim AUTP</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="py-3">Nama Petani / Kelompok</th>
+                                        <th class="py-3">Lokasi Sawah</th>
+                                        <th class="py-3">Bukti Lonjakan EC (IoT)</th>
+                                        <th class="py-3">Status Verifikasi</th>
+                                        <th class="py-3">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800 text-slate-300">
+                                    <tr>
+                                        <td class="py-3 font-semibold text-white">Kelompok Tani Mangrove Jaya</td>
+                                        <td class="py-3">Blok 04 - Eretan Wetan</td>
+                                        <td class="py-3 text-rose-400 font-bold">4.8 mS/cm (Kritis)</td>
+                                        <td class="py-3"><span class="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-md text-xs">Menunggu Validasi</span></td>
+                                        <td class="py-3">
+                                            <button class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs">Setujui Bukti</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+            // --- DEFAULT / FITUR LAIN ---
+            else {
+                content.innerHTML = `
+                    <div class="bg-brand-card border border-slate-800 rounded-2xl p-8 text-center">
+                        <i class="fa-solid fa-layer-group text-4xl text-emerald-500 mb-3"></i>
+                        <h3 class="text-lg font-bold text-white">Fitur: ${menuName}</h3>
+                        <p class="text-sm text-slate-400 mt-1">Tampilan khusus untuk stakeholder <strong class="text-emerald-400">${userRole.toUpperCase()}</strong> sedang aktif.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 5. Fungsi Peta Satelit Asli Eretan Wetan (Menggunakan Leaflet & Esri World Imagery)
+        function initSatelliteMap() {
+            // Koordinat sawah pesisir Eretan Wetan, Indramayu
+            const eretanLat = -6.2868;
+            const eretanLng = 107.9388;
+
+            const map = L.map('satelliteMap').setView([eretanLat, eretanLng], 14);
+
+            // Layer Peta Satelit Asli (Gratis dari Esri World Imagery)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            }).addTo(map);
+
+            // 3 Titik Marker Sensor di Sawah Eretan Wetan
+            const sensors = [
+                { id: "Sensor 01 (Blok A)", coords: [-6.2850, 107.9350], status: "Normal (EC: 2,4 mS/cm)" },
+                { id: "Sensor 02 (Blok B)", coords: [-6.2885, 107.9410], status: "Normal (EC: 2,7 mS/cm)" },
+                { id: "Sensor 03 (Blok Pesisir)", coords: [-6.2830, 107.9400], status: "Waspada (EC: 3,9 mS/cm)" }
+            ];
+
+            sensors.forEach(s => {
+                L.marker(s.coords)
+                    .addTo(map)
+                    .bindPopup(`<b>${s.id}</b><br>Status: ${s.status}`)
+                    .openPopup();
+            });
+        }
+
+        // 6. Fungsi Logout
+        function handleLogout() {
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            window.location.href = 'login.html';
+        }
+
+        // Load halaman pertama kali saat dibuka
+        window.onload = () => {
+            const firstMenu = (menusByRole[userRole] || menusByRole['penyuluh'])[0];
+            loadContent(firstMenu.id, firstMenu.name);
+        };
     </script>
 </body>
 </html>
