@@ -164,5 +164,18 @@
             */
         }
     </script>
+        function handleLogin(e) {
+            e.preventDefault(); // Mencegah reload halaman
+            const selectedRole = document.getElementById('role').value;
+            const username = document.getElementById('username').value;
+            
+            // Simpan Peran dan Nama User di Browser Storage
+            localStorage.setItem('teras_role', selectedRole);
+            localStorage.setItem('teras_username', username);
+            
+            // Pindah ke Dashboard
+            window.location.href = 'dashboard.html';
+        }
+    </script>
 </body>
 </html>
